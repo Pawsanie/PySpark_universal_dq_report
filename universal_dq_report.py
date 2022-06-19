@@ -1,9 +1,14 @@
-import time
-from pyspark.sql import SparkSession, Row
+from pyspark.sql import SparkSession
 import pyspark.sql.functions as py_sql
 from pyspark.sql.types import StructType, StructField, StringType, DateType, LongType
 from datetime import date, timedelta, datetime
 import argparse
+
+"""
+The script reads the dataset along the path and selects the columns 
+in it received from the argument for the specified dates.
+Then it saves the report to the specified path of HDFS.
+"""
 
 
 def get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
@@ -12,8 +17,47 @@ def get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
     Spark Session
     --------------
     Look at schema...
+    'interest_columns' does not need to be received as an argument.
+    It can be filled in manually.
+    The 'scheme' variable can also be customized too.
+    The main thing is that the columns in the 'result_df' variable
+    match the columns in the given 'scheme' variable.
+    --------------
+    This example is an elementary report which in theory,
+    should create a DataFrame with many rows that meet the requirements of 3 filters:
+    * A value in the 'identifier' column is in 'interest_ids' list.
+    * A value in the 'response' column contains the text 'Success' or 'Not_full_data'.
+    * A value in the 'test_column' column contains the text 'interest_data_01' or 'interest_data_02'.
+    As a result, a '.csv' table with values from columns 'column_1', 'column_2' and 'column_3' will be saved on HDFS.
     """
-    pass
+    spark = SparkSession.builder \
+        .appName("Universal_DQ_report") \
+        .getOrCreate()
+
+    schema = StructType([
+        StructField("column_1", StringType(), True),
+        StructField("column_2", StringType(), True),
+        StructField("column_3", StringType(), True)
+    ])
+    result = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
+
+    for day in interest_days:
+        partition_path = f"{path_to_dataset}{dataset_name}/{day}{partition_type}"
+        interest_partition = spark.read.parquet(partition_path)
+        trace_by_id = interest_partition.filter(
+            py_sql.col("identifier").isin(interest_ids))
+
+        trace_with_success = trace_by_id.filter(py_sql.col('response').like('%Success%') |
+                                                py_sql.col('response').like('%Not_full_data%'))
+
+        trace_with_interest_data = trace_with_success.filter(py_sql.col('test_column').like('%interest_data_01%') |
+                                                             py_sql.col('test_column').like('%interest_data_02%'))
+
+        result_df = trace_with_interest_data.select(interest_columns)  # == Schema StructType columns.
+        result = result.union(result_df)
+
+    result.coalesce(1).write.csv(path_to_save_file, header=True)
+    result.show(10, False)
 
 
 def partition_type_checking(partition_type) -> str:
@@ -70,7 +114,7 @@ def args_processing():
     Get strings as input and output.
     """
     args_parser = argparse.ArgumentParser(description='Check partitions on hdfs.')
-    args_parser.add_argument('-id', '--list_of_ids', required=True, help='List of ids for the report.')
+    args_parser.add_argument('-id', '--list_of_ids', required=True, help='List of identifiers for the report.')
     args_parser.add_argument('-cn', '--list_of_columns', required=True, help='List of columns for the report.')
     args_parser.add_argument('-n', '--name_of_dataset', required=True, help='Dataset name for writing and reading.')
     args_parser.add_argument('-p', '--path_to_dataset', required=True, help='Dataset path for reading.')
@@ -99,12 +143,9 @@ def run():
     interest_days = list_of_days(date_from, date_to)
     path_to_save_file = f"{dataset_name}_{str(date_from)}-{str(date_to)}{'.csv'}"
     partition_type = partition_type_checking(type_of_dataset)
+
     get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
                interest_days, path_to_save_file, partition_type)
-
-    print(interest_ids)
-    print(interest_columns)
-    print(partition_type)
 
 
 if __name__ == '__main__':

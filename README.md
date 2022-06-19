@@ -4,7 +4,9 @@
 **Using** some or all of the elements of this code, **You** assume **responsibility for any consequences!**
 
 ## Description of the report:
-* test
+The script reads the dataset along the path and selects the columns 
+in it received from the argument for the specified dates.
+Then it saves the report to the specified path of HDFS
 
 ## Installing the Required Packages:
 ```bash
@@ -22,5 +24,30 @@ chmod +x ./start_universal_dq_report.sh
 ```
 The script can also be run directly with python.
 ```bash
-python3 
+spark-submit --queue uat --num-executors 5 --executor-cores 16 --executor-memory 15G --driver-memory 4G universal_dq_report.py \
+-id '1234561,123452,123453' \
+-cn 'column_1,column_2,column_3' \
+-n 'Name' \
+-p '/exemple_warhaus/exemple_root/exemple_catalog/' \
+-t 'daily' \
+-df 'YYYY-MM-DD' \
+-dt 'YYYY-MM-DD'
 ```
+Where you can set or not set the following arguments as you wish for spark-submit:
+* --queue
+* --num-executors
+* --executor-cores
+* -executor-memory
+* --executor-memory
+* --driver-memory
+
+About script arguments:
+* -id - List or one id like string split by ',' without space.
+* -cn - List or one column like string split by ',' without space.
+* -n - Dataset`s name like string.
+* -p - Partition path on HDFS, like string.
+* -t - Daily or hourly dataset type (daily/hourly).
+* -df - The date you plan to receive the report from (format YYYY-MM-DD).
+* -dt - The date you plan to receive the report to. If not specified, it will be today (format YYYY-MM-DD).
+
+Thank you for showing interest in my work.
