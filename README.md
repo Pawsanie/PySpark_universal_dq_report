@@ -8,12 +8,12 @@ The script reads the dataset along the path and selects the columns
 in it received from the argument for the specified dates.
 Then it saves the report to the specified path of HDFS
 
-This example is an elementary report which in theory,
-    should create a DataFrame with many rows that meet the requirements of 3 filters:
-    * A value in the 'identifier' column is in 'interest_ids' list.
-    * A value in the 'response' column contains the text 'Success' or 'Not_full_data'.
-    * A value in the 'test_column' column contains the text 'interest_data_01' or 'interest_data_02'.
-    As a result, a '.csv' table with values from columns 'column_1', 'column_2' and 'column_3' will be saved on HDFS.
+This example is an elementary report which in theory, <br/>
+should create a DataFrame with many rows that meet the requirements of 3 filters:
+* A value in the 'identifier' column is in 'interest_ids' list.
+* A value in the 'response' column contains the text 'Success' or 'Not_full_data'.
+* A value in the 'test_column' column contains the text 'interest_data_01' or 'interest_data_02'.
+As a result, a '.csv' table with values from columns 'column_1', 'column_2' and 'column_3' will be saved on HDFS.
 
 For the practical result, it is required to substitute the real column names and data for filters into the get_report variable.
 
