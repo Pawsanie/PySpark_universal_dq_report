@@ -53,7 +53,7 @@ def get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
         trace_with_interest_data = trace_with_success.filter(py_sql.col('test_column').like('%interest_data_01%') |
                                                              py_sql.col('test_column').like('%interest_data_02%'))
 
-        result_df = trace_with_interest_data.select(interest_columns)  # == Schema StructType columns.
+        result_df = trace_with_interest_data.select(interest_columns)  # Must be == Schema StructType columns.
         result = result.union(result_df)
 
     result.coalesce(1).write.csv(path_to_save_file, header=True)
