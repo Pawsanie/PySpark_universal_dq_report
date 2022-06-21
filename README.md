@@ -40,13 +40,13 @@ spark-submit --queue uat --num-executors 5 --executor-cores 16 --executor-memory
 -p '/exemple_warhaus/exemple_root/exemple_catalog/' \
 -t 'daily' \
 -df 'YYYY-MM-DD' \
--dt 'YYYY-MM-DD'
+-dt 'YYYY-MM-DD' \
+-pts ''
 ```
 Where you can set or not set the following arguments as you wish for spark-submit:
 * --queue
 * --num-executors
 * --executor-cores
-* -executor-memory
 * --executor-memory
 * --driver-memory
 
@@ -58,5 +58,6 @@ About script arguments:
 * -t - Daily or hourly dataset type (daily/hourly).
 * -df - The date you plan to receive the report from (format YYYY-MM-DD).
 * -dt - The date you plan to receive the report to. If not specified, it will be today (format YYYY-MM-DD).
+* -pts - The path to safe csv report on HDFS. If not specified, it will be users home directory.
 
 Thank you for showing interest in my work.

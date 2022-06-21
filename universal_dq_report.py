@@ -122,6 +122,8 @@ def args_processing():
     args_parser.add_argument('-df', '--date_from', required=True, help='Start date of the report.')
     args_parser.add_argument('-dt', '--date_to', required=False,
                              help='End date of the report.', default=str(date.today()))
+    args_parser.add_argument('-pts', '--path_to_safe', required=False,
+                             default='', help='Path to safe csv report on hdfs.')
     return args_parser.parse_args()
 
 
@@ -137,11 +139,12 @@ def run():
     type_of_dataset = args.type_of_dataset
     date_from = datetime.strptime(args.date_from, '%Y-%m-%d').date()
     date_to = datetime.strptime(args.date_to, '%Y-%m-%d').date()
+    path_to_safe = args.path_to_safe
 
     interest_ids = string_to_list_parser(list_of_ids)
     interest_columns = string_to_list_parser(list_of_columns)
     interest_days = list_of_days(date_from, date_to)
-    path_to_save_file = f"{dataset_name}_{str(date_from)}-{str(date_to)}{'.csv'}"
+    path_to_save_file = f"{path_to_safe}{dataset_name}_{str(date_from)}-{str(date_to)}{'.csv'}"
     partition_type = partition_type_checking(type_of_dataset)
 
     get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
