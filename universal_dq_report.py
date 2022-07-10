@@ -46,7 +46,7 @@ def get_report(interest_ids, dataset_name, path_to_dataset,
             StructField("column_1_all", IntegerType(), True),
             StructField("column_2_ok_more_3sec", IntegerType(), True),
             StructField("column_3_fail_low_3sec", IntegerType(), True)])
-        result_for_client_id = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
+        result_for_identifier = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
         for day in interest_days:  # Select data for day.
             partition_path = f"{path_to_dataset}{dataset_name}/{day}{partition_type}"
             interest_partition = spark.read.parquet(partition_path)
@@ -64,8 +64,8 @@ def get_report(interest_ids, dataset_name, path_to_dataset,
                 (py_sql.col('response_time') - py_sql.col('request_time')) < 3).count()
 
             result_df = spark.createDataFrame(data=[(column_1, column_2, column_3)], schema=schema)
-            result_for_client_id = result_for_client_id.union(result_df)
-        result_dict.update({identifier: result_for_client_id})
+            result_for_identifier = result_for_identifier.union(result_df)
+        result_dict.update({identifier: result_for_identifier})
 
     # Union all id`s report.
     schema_result = StructType([
