@@ -1,8 +1,6 @@
 #!/bin/bash
 # List or one id like string split by ',' without space.
 id_list='1234561,123452,123453'
-# List or one column like string split by ',' without space.
-column_list='column_1,column_2,column_3'
 # Dataset`s name like string.
 dataset_name='Name'
 # Partition path on HDFS, like string.
@@ -17,7 +15,6 @@ date_to='YYYY-MM-DD'
 # Start:
 python3 universal_dq_report.py \
 -id $id_list \
--cn $column_list \
 -n $dataset_name \
 -p $partition_path \
 -t $type_of_dataset \

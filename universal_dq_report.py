@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as py_sql
-from pyspark.sql.types import StructType, StructField, StringType, DateType, LongType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DateType, LongType
 from datetime import date, timedelta, datetime
 import argparse
 
@@ -11,7 +11,7 @@ Then it saves the report to the specified path of HDFS.
 """
 
 
-def get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
+def get_report(interest_ids, dataset_name, path_to_dataset,
                interest_days, path_to_save_file, partition_type):
     """
     Spark Session
@@ -27,37 +27,63 @@ def get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
     should create a DataFrame with many rows that meet the requirements of 3 filters:
     * A value in the 'identifier' column is in 'interest_ids' list.
     * A value in the 'response' column contains the text 'Success' or 'Not_full_data'.
-    * A value in the 'test_column' column contains the text 'interest_data_01' or 'interest_data_02'.
-    As a result, a '.csv' table with values from columns 'column_1', 'column_2' and 'column_3' will be saved on HDFS.
+    * A value in the 'response' column contains the text 'Failure'.
+
+    As a result, a '.csv' table with values from columns 'identifier',
+    'column_1', 'column_2' and 'column_3' will be saved on HDFS.
+    * Where identifier contains id.
+    * Where column_1_all contains count of all results.
+    * Where column_2_ok_more_3sec contains count of trace_with_success when the latency is more 3 seconds.
+    * Where column_3_fail_low_3sec contains count of trace_with_success when the latency is less 3 seconds.
     """
     spark = SparkSession.builder \
         .appName("Universal_DQ_report") \
         .getOrCreate()
 
-    schema = StructType([
-        StructField("column_1", StringType(), True),
-        StructField("column_2", StringType(), True),
-        StructField("column_3", StringType(), True)
+    result_dict = {}
+    for identifier in interest_ids:  # Select data for id.
+        schema = StructType([
+            StructField("column_1_all", IntegerType(), True),
+            StructField("column_2_ok_more_3sec", IntegerType(), True),
+            StructField("column_3_fail_low_3sec", IntegerType(), True)])
+        result_for_client_id = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
+        for day in interest_days:  # Select data for day.
+            partition_path = f"{path_to_dataset}{dataset_name}/{day}{partition_type}"
+            interest_partition = spark.read.parquet(partition_path)
+            trace_by_id = interest_partition.filter(
+                py_sql.col("identifier").isin(identifier))
+            trace_with_success = trace_by_id.filter(py_sql.col('response').like('%"Success"%') |
+                                                    py_sql.col('response').like('%"Not_full_data"%'))
+            trace_with_failure = trace_by_id.filter(py_sql.col('response').like('%"Failure"%'))
+            trace_all = trace_with_success.union(trace_with_failure)
+
+            column_1 = trace_with_success.count() + trace_with_failure.count()
+            column_2 = trace_all.filter(
+                ((py_sql.col('response_time') / 1000) - (py_sql.col('request_time') / 1000)) > 3).count()
+            column_3 = trace_with_failure.filter(
+                (py_sql.col('response_time') - py_sql.col('request_time')) < 3).count()
+
+            result_df = spark.createDataFrame(data=[(column_1, column_2, column_3)], schema=schema)
+            result_for_client_id = result_for_client_id.union(result_df)
+        result_dict.update({identifier: result_for_client_id})
+
+    # Union all id`s report.
+    schema_result = StructType([
+        StructField("identifier", StringType(), True),
+        StructField("column_1_all", IntegerType(), True),
+        StructField("column_2_ok_more_3sec", IntegerType(), True),
+        StructField("column_3_fail_low_3sec", IntegerType(), True)
     ])
-    result = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
-
-    for day in interest_days:
-        partition_path = f"{path_to_dataset}{dataset_name}/{day}{partition_type}"
-        interest_partition = spark.read.parquet(partition_path)
-        trace_by_id = interest_partition.filter(
-            py_sql.col("identifier").isin(interest_ids))
-
-        trace_with_success = trace_by_id.filter(py_sql.col('response').like('%Success%') |
-                                                py_sql.col('response').like('%Not_full_data%'))
-
-        trace_with_interest_data = trace_with_success.filter(py_sql.col('test_column').like('%interest_data_01%') |
-                                                             py_sql.col('test_column').like('%interest_data_02%'))
-
-        result_df = trace_with_interest_data.select(interest_columns)  # Must be == Schema StructType columns.
+    result = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema_result)
+    for identifier in result_dict:
+        result_df = result_dict.get(identifier)
+        column_1 = result_df.agg({'column_1_all': 'sum'}).collect()[0][0]
+        column_2 = result_df.agg({'column_2_ok_more_3sec': 'sum'}).collect()[0][0]
+        column_3 = result_df.agg({'column_3_fail_low_3sec': 'sum'}).collect()[0][0]
+        result_df = spark.createDataFrame(data=[(identifier, column_1, column_2, column_3)], schema=schema_result)
         result = result.union(result_df)
-
     result.coalesce(1).write.csv(path_to_save_file, header=True)
-    result.show(10, False)
+    result.show(1000, False)
 
 
 def partition_type_checking(partition_type) -> str:
@@ -115,7 +141,6 @@ def args_processing():
     """
     args_parser = argparse.ArgumentParser(description='Check partitions on hdfs.')
     args_parser.add_argument('-id', '--list_of_ids', required=True, help='List of identifiers for the report.')
-    args_parser.add_argument('-cn', '--list_of_columns', required=True, help='List of columns for the report.')
     args_parser.add_argument('-n', '--name_of_dataset', required=True, help='Dataset name for writing and reading.')
     args_parser.add_argument('-p', '--path_to_dataset', required=True, help='Dataset path for reading.')
     args_parser.add_argument('-t', '--type_of_dataset', required=True, help='Daily or hourly dataset type.')
@@ -133,7 +158,6 @@ def run():
     """
     args = args_processing()
     list_of_ids = args.list_of_ids
-    list_of_columns = args.list_of_columns
     dataset_name = args.name_of_dataset
     path_to_dataset = args.path_to_dataset
     type_of_dataset = args.type_of_dataset
@@ -142,12 +166,11 @@ def run():
     path_to_safe = args.path_to_safe
 
     interest_ids = string_to_list_parser(list_of_ids)
-    interest_columns = string_to_list_parser(list_of_columns)
     interest_days = list_of_days(date_from, date_to)
-    path_to_save_file = f"{path_to_safe}{dataset_name}_{str(date_from)}-{str(date_to)}{'.csv'}"
+    path_to_save_file = f"{path_to_safe}{dataset_name}_{str(date_from)}-{str(date_to)}"
     partition_type = partition_type_checking(type_of_dataset)
 
-    get_report(interest_ids, interest_columns, dataset_name, path_to_dataset,
+    get_report(interest_ids, dataset_name, path_to_dataset,
                interest_days, path_to_save_file, partition_type)
 
 
