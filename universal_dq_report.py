@@ -11,8 +11,8 @@ Then it saves the report to the specified path of HDFS.
 """
 
 
-def get_report(interest_ids, dataset_name, path_to_dataset,
-               interest_days, path_to_save_file, partition_type):
+def get_report(interest_ids: list, dataset_name: str, path_to_dataset: str,
+               interest_days: list, path_to_save_file: str, partition_type: str):
     """
     Spark Session
     --------------
@@ -48,7 +48,7 @@ def get_report(interest_ids, dataset_name, path_to_dataset,
             StructField("column_3_fail_low_3sec", IntegerType(), True)])
         result_for_identifier = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
         for day in interest_days:  # Select data for day.
-            partition_path = f"{path_to_dataset}{dataset_name}/{day}{partition_type}"
+            partition_path = f"{path_to_dataset}/{dataset_name}/{day}{partition_type}"
             interest_partition = spark.read.parquet(partition_path)
             trace_by_id = interest_partition.filter(
                 py_sql.col("identifier").isin(identifier))
@@ -86,7 +86,7 @@ def get_report(interest_ids, dataset_name, path_to_dataset,
     result.show(1000, False)
 
 
-def partition_type_checking(partition_type) -> str:
+def partition_type_checking(partition_type: str) -> str:
     """
     Gets the word identifier and infers the type of the dataset.
     -------------------
@@ -99,7 +99,7 @@ def partition_type_checking(partition_type) -> str:
     return partition_type
 
 
-def string_to_list_parser(str_arg) -> list[str]:
+def string_to_list_parser(str_arg: str) -> list[str]:
     """
     Parse the list of elements from one string:
     Get a string with the interesting data.
@@ -116,7 +116,7 @@ def string_to_list_parser(str_arg) -> list[str]:
     return interest_data_list
 
 
-def list_of_days(date_from, date_to) -> list[str]:
+def list_of_days(date_from: date, date_to: date) -> list[str]:
     """
     Parses dates creating a list of the days needed for the report.
     Get date type as input.
@@ -129,8 +129,8 @@ def list_of_days(date_from, date_to) -> list[str]:
         days_count *= -1
     for occasion in range(days_count):
         day_data = date_from + timedelta(days=+occasion)
-        interest_days.append(datetime.strftime(day_data, '%Y/%m/%d'))
-    interest_days.append(datetime.strftime(date_to, '%Y/%m/%d'))
+        interest_days.append(day_data.strftime('%Y/%m/%d'))
+    interest_days.append(date_to.strftime('%Y/%m/%d'))
     return interest_days
 
 
