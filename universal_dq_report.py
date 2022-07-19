@@ -48,6 +48,8 @@ def get_report(interest_ids: list, dataset_name: str, path_to_dataset: str,
             StructField("column_3_fail_low_3sec", IntegerType(), True)])
         result_for_identifier = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema)
         for day in interest_days:  # Select data for day.
+            # "path_to_dataset", "dataset_name", "partition_type" in "partition_path" below can be hardcoded.
+            # Look at the "args_processing" function for more information.
             partition_path = f"{path_to_dataset}/{dataset_name}/{day}{partition_type}"
             interest_partition = spark.read.parquet(partition_path)
             trace_by_id = interest_partition.filter(
@@ -86,6 +88,7 @@ def get_report(interest_ids: list, dataset_name: str, path_to_dataset: str,
     result.show(1000, False)
 
 
+# If you hardcoded "partition_type" remove function below an "--type_of_dataset" argument.
 def partition_type_checking(partition_type: str) -> str:
     """
     Gets the word identifier and infers the type of the dataset.
@@ -141,20 +144,23 @@ def args_processing():
     """
     args_parser = argparse.ArgumentParser(description='Check partitions on hdfs.')
     args_parser.add_argument('-id', '--list_of_ids', required=True, help='List of identifiers for the report.')
-    args_parser.add_argument('-n', '--name_of_dataset', required=True, help='Dataset name for writing and reading.')
-    args_parser.add_argument('-p', '--path_to_dataset', required=True, help='Dataset path for reading.')
-    args_parser.add_argument('-t', '--type_of_dataset', required=True, help='Daily or hourly dataset type.')
     args_parser.add_argument('-df', '--date_from', required=True, help='Start date of the report.')
     args_parser.add_argument('-dt', '--date_to', required=False,
                              help='End date of the report.', default=str(date.today()))
     args_parser.add_argument('-pts', '--path_to_safe', required=False,
                              default='', help='Path to safe csv report on hdfs.')
+    # I don't use the 3 arguments below in production.
+    # It can usually be hardcoded in a DQ report script "get_report" function`s "partition_path" variable...
+    args_parser.add_argument('-n', '--name_of_dataset', required=True, help='Dataset name for writing and reading.')
+    args_parser.add_argument('-p', '--path_to_dataset', required=True, help='Dataset path for reading.')
+    args_parser.add_argument('-t', '--type_of_dataset', required=True, help='Daily or hourly dataset type.')
+
     return args_parser.parse_args()
 
 
 def run():
     """
-    The root variable responsible for starting the rest.
+    The root function responsible for starting the rest.
     """
     args = args_processing()
     list_of_ids = args.list_of_ids
