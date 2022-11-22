@@ -11,7 +11,7 @@ Then it saves the report to the specified path of HDFS.
 """
 
 
-def get_report(interest_ids: list, dataset_name: str, path_to_dataset: str,
+def get_report(*, interest_ids: list, dataset_name: str, path_to_dataset: str,
                interest_days: list, path_to_save_file: str, partition_type: str):
     """
     Spark Session
@@ -52,11 +52,17 @@ def get_report(interest_ids: list, dataset_name: str, path_to_dataset: str,
             # Look at the "args_processing" function for more information.
             partition_path = f"{path_to_dataset}/{dataset_name}/{day}{partition_type}"
             interest_partition = spark.read.parquet(partition_path)
+
             trace_by_id = interest_partition.filter(
                 py_sql.col("identifier").isin(identifier))
-            trace_with_success = trace_by_id.filter(py_sql.col('response').like('%"Success"%') |
-                                                    py_sql.col('response').like('%"Not_full_data"%'))
-            trace_with_failure = trace_by_id.filter(py_sql.col('response').like('%"Failure"%'))
+
+            trace_with_success = trace_by_id.filter(
+                py_sql.col('response').like('%"Success"%') |
+                py_sql.col('response').like('%"Not_full_data"%'))
+
+            trace_with_failure = trace_by_id.filter(
+                py_sql.col('response').like('%"Failure"%'))
+
             trace_all = trace_with_success.union(trace_with_failure)
 
             column_1 = trace_with_success.count() + trace_with_failure.count()
@@ -112,7 +118,7 @@ def string_to_list_parser(str_arg: str) -> list[str]:
     Symbol to split MUST be ','!
     """
     interest_data_list = []
-    str_arg_element = str_arg.split(',')
+    str_arg_element: list[str] = str_arg.split(',')
     arg_elements_count = len(str_arg_element)
     for element in range(arg_elements_count):
         interest_data_list.append(str_arg_element[element])
@@ -126,8 +132,7 @@ def list_of_days(date_from: date, date_to: date) -> list[str]:
     Generate list of strings with interesting dates parts of hdfs path.
     """
     interest_days = []
-    days_count = (date_from - date_to).days
-    days_count = int(days_count)
+    days_count: int = (date_from - date_to).days
     if days_count < 0:
         days_count *= -1
     for occasion in range(days_count):
@@ -147,8 +152,8 @@ def args_processing():
     args_parser.add_argument('-df', '--date_from', required=True, help='Start date of the report.')
     args_parser.add_argument('-dt', '--date_to', required=False,
                              help='End date of the report.', default=str(date.today()))
-    args_parser.add_argument('-pts', '--path_to_safe', required=False,
-                             default='', help='Path to safe csv report on hdfs.')
+    args_parser.add_argument('-pts', '--path_to_save', required=False,
+                             default='', help='Path to save csv report on hdfs.')
     # I don't use the 3 arguments below in production.
     # It can usually be hardcoded in a DQ report script "get_report" function`s "partition_path" variable...
     args_parser.add_argument('-n', '--name_of_dataset', required=True, help='Dataset name for writing and reading.')
@@ -162,22 +167,26 @@ def run():
     """
     The root function responsible for starting the rest.
     """
-    args = args_processing()
-    list_of_ids = args.list_of_ids
-    dataset_name = args.name_of_dataset
-    path_to_dataset = args.path_to_dataset
-    type_of_dataset = args.type_of_dataset
-    date_from = datetime.strptime(args.date_from, '%Y-%m-%d').date()
-    date_to = datetime.strptime(args.date_to, '%Y-%m-%d').date()
-    path_to_safe = args.path_to_safe
+    args: argparse.Namespace = args_processing()
+    list_of_ids: str = args.list_of_ids
+    dataset_name: str = args.name_of_dataset
+    path_to_dataset: str = args.path_to_dataset
+    type_of_dataset: str = args.type_of_dataset
+    date_from: date = datetime.strptime(args.date_from, '%Y-%m-%d').date()
+    date_to: date = datetime.strptime(args.date_to, '%Y-%m-%d').date()
+    path_to_save: str = args.path_to_save
 
-    interest_ids = string_to_list_parser(list_of_ids)
-    interest_days = list_of_days(date_from, date_to)
-    path_to_save_file = f"{path_to_safe}{dataset_name}_{str(date_from)}-{str(date_to)}"
-    partition_type = partition_type_checking(type_of_dataset)
+    interest_ids: list[str] = string_to_list_parser(list_of_ids)
+    interest_days: list[str] = list_of_days(date_from, date_to)
+    path_to_save_file: str = f"{path_to_save}{dataset_name}_{str(date_from)}---{str(date_to)}"
+    partition_type: str = partition_type_checking(type_of_dataset)
 
-    get_report(interest_ids, dataset_name, path_to_dataset,
-               interest_days, path_to_save_file, partition_type)
+    get_report(interest_ids=interest_ids,
+               dataset_name=dataset_name,
+               path_to_dataset=path_to_dataset,
+               interest_days=interest_days,
+               path_to_save_file=path_to_save_file,
+               partition_type=partition_type)
 
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ The script can also be run directly with python.
 spark-submit --queue uat --num-executors 5 --executor-cores 16 --executor-memory 15G --driver-memory 4G universal_dq_report.py \
 -id '1234561,123452,123453' \
 -n 'Name' \
--p '/exemple_warhaus/exemple_root/exemple_catalog/' \
+-p '/example_warehouse/example_root/example_catalog/' \
 -t 'daily' \
 -df 'YYYY-MM-DD' \
 -dt 'YYYY-MM-DD' \
@@ -62,6 +62,6 @@ About script arguments:
 * -t - Daily or hourly dataset type (daily/hourly).
 * -df - The date you plan to receive the report from (format YYYY-MM-DD).
 * -dt - The date you plan to receive the report to. If not specified, it will be today (format YYYY-MM-DD).
-* -pts - The path to safe csv report on HDFS. If not specified, it will be users home directory.
+* -pts - The path to save csv report on HDFS. If not specified, it will be users home directory.
 
 Thank you for showing interest in my work.

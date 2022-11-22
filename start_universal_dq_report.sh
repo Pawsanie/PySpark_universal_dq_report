@@ -4,7 +4,7 @@ id_list='1234561,123452,123453'
 # Dataset`s name like string.
 dataset_name='Name'
 # Partition path on HDFS, like string.
-partition_path='/exemple_warhaus/exemple_root/exemple_catalog/'
+partition_path='/example_warehouse/example_root/example_catalog/'
 # Daily or hourly dataset type (daily/hourly):
 type_of_dataset='daily'
 # The date you plan to receive the report from.
