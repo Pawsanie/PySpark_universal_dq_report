@@ -1,8 +1,9 @@
+from datetime import date, timedelta, datetime
+import argparse
+
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as py_sql
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DateType, LongType
-from datetime import date, timedelta, datetime
-import argparse
 
 """
 The script reads the dataset along the path and selects the columns 
