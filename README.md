@@ -49,11 +49,11 @@ spark-submit --queue uat --num-executors 5 --executor-cores 16 --executor-memory
 -pts ''
 ```
 Where you can set or not set the following arguments as you wish for spark-submit:
-* --queue
-* --num-executors
-* --executor-cores
-* --executor-memory
-* --driver-memory
+* --queue - The name of the queue in which the YARN application will run.
+* --num-executors - The number of executor machines that will carry out the task.
+* --executor-cores - The number of CPU cores for each executor.
+* --executor-memory - The amount of RAM for each executor.
+* --driver-memory - The amount of RAM for the main task that manages the rest.
 
 About script arguments:
 * -id - List or one id like string split by ',' without space.
