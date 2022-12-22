@@ -1,7 +1,9 @@
 # PySpark universal dq report
 
 ## Disclaimer:
-**Using** some or all of the elements of this code, **You** assume **responsibility for any consequences!**
+:warning:**Using** some or all of the elements of this code, **You** assume **responsibility for any consequences!**<br/>
+
+:warning:The **licenses** for the technologies on which the code **depends** are subject to **change by their authors**.
 
 ## Description of the report:
 The script reads the dataset along the path and selects the columns <br/>
@@ -22,6 +24,17 @@ As a result, a '.csv' table with values from columns 'identifier',<br/>
 * Where column_3_fail_low_3sec contains count of trace_with_success when the latency is less 3 seconds.
 
 For the practical result, it is required to substitute the real column names and data for filters into the get_report variable.
+****
+
+## Required:
+The application code is written in python and obviously depends on it.<br>
+**Python** version 3.6 [Python Software Foundation License / (with) Zero-Clause BSD license (after 3.8.6 version Python)]:
+* :octocat:[Python GitHub](https://github.com/python)
+* :bookmark_tabs:[Python internet page](https://www.python.org/)
+
+**PySpark** [Apache License 2.0/ (with) separate licenses for specific items]:
+* :octocat:[PySpark GitHub](https://github.com/apache/spark)
+* :bookmark_tabs:[PySpark internet page](https://spark.apache.org/)
 
 ## Installing the Required Packages:
 ```bash
@@ -63,5 +76,6 @@ About script arguments:
 * -df - The date you plan to receive the report from (format YYYY-MM-DD).
 * -dt - The date you plan to receive the report to. If not specified, it will be today (format YYYY-MM-DD).
 * -pts - The path to save csv report on HDFS. If not specified, it will be users home directory.
+***
 
 Thank you for showing interest in my work.
